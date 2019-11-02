@@ -9,7 +9,7 @@ end
 local function replaceImports(script)
 	for i,v in next, findImports(script) do
 		local file = io.open(i)
-		local source = replaceImports(file:read("*all")):gsub("[\t\n]", " ")
+		local source = replaceImports(file:read("*all")):gsub("\t+", " "):gsub("\n+", " ")
 		file:close()
 		script = script:gsub(v:gsub("([^%w])", "%%%1"), ("(function(...) %s end)(...)"):format(source))
 	end
