@@ -1,5 +1,3 @@
-local mainScript = io.open("test.lua", "r")
-
 local function findImports(script)
 	local imports = {}
 	for match in script:gmatch("require%s*%(?%s*['\"][%w_/\\%.]+['\"]%s*%)?") do
@@ -9,19 +7,16 @@ local function findImports(script)
 end
 
 local function replaceImports(script)
-	local imports = findImports(script)
-	for i,v in next, imports do
+	for i,v in next, findImports(script) do
 		local file = io.open(i)
-		local source = replaceImports(file:read("*all"))
+		local source = replaceImports(file:read("*all")):gsub("[\t\n]", " ")
 		file:close()
-		script = script:replace(v, ("(function(...) %s end)(...)"):format(source))
+		script = script:gsub(v:gsub("([^%w])", "%%%1"), ("(function(...) %s end)(...)"):format(source))
 	end
 	return script
 end
 
-local mainScriptSource = mainScript:read("*all")
+local mainScript, newMain = io.open("main.lua", "r"), io.open("newScript.lua", "w+")
+newMain:write(replaceImports(mainScript:read("*all")))
 mainScript:close()
-
-local newMain = io.open("newScript.lua", "w+")
-newMain:write(replaceImports(mainScriptSource))
 newMain:close()
