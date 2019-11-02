@@ -1,31 +1,27 @@
 local mainScript = io.open("test.lua", "r")
-local testScript = [===[
-	local te, st = require("test.lua")
-	memes = require("lol.lua")
-
-]===]
-
 
 local function findImports(script)
 	local imports = {}
-	for match in script:gmatch("l?o?c?a?l?%s*.-%s*=?%s*require%s*%(?%s*['\"][%w_/\\%.]+['\"]%s*%)?\n") do
-		local import = {}
-		import.IsLocal = match:match("local%s*") ~= nil
-		import.Name = match:match("l?o?c?a?l?%s*([%w_]+)%s*=") or #imports + 1
-		import.SourcePath = match:match("require%s*%(?%s*['\"]([%w_/\\%.]+)['\"]%s*%)?")
-		table.insert(imports, import)
+	for match in script:gmatch("require%s*%(?%s*['\"][%w_/\\%.]+['\"]%s*%)?") do
+		imports[match:match("%(?%s*['\"]([%w_/\\%.]+)['\"]%s*%)?")] = match
 	end
 	return imports
 end
 
-local imports = findImports(mainScript:read("*all"))
-mainScript:close()
-
-for i,v in next, imports do
-	for l,k in next, v do
-		print(l,k)
-  	end
+local function replaceImports(script)
+	local imports = findImports(script)
+	for i,v in next, imports do
+		local file = io.open(i)
+		local source = replaceImports(file:read("*all"))
+		file:close()
+		script = script:replace(v, ("(function(...) %s end)(...)"):format(source))
+	end
+	return script
 end
 
-local newMain = io.open("newScript.lua", "r")
--- write contents to new script
+local mainScriptSource = mainScript:read("*all")
+mainScript:close()
+
+local newMain = io.open("newScript.lua", "w+")
+newMain:write(replaceImports(mainScriptSource))
+newMain:close()
