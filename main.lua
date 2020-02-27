@@ -1,3 +1,6 @@
+package.path = "C:\\Users\\User\\Documents\\GitHub\\lua-merge\\LuaSrcDiet\\?.lua;" .. package.path
+local Minifier = require("init")
+
 local function findImports(script)
 	local imports = {}
 	for match in script:gmatch("require%s*%(?%s*['\"][%w_/\\%.]+['\"]%s*%)?") do
@@ -6,17 +9,18 @@ local function findImports(script)
 	return imports
 end
 
-local function replaceImports(script)
+local function replaceImports(script, path)
 	for i,v in next, findImports(script) do
-		local file = io.open(i)
-		local source = replaceImports(file:read("*all")):gsub("\t+", " "):gsub("\n+", " ")
+		local file = io.open(path .. i)
+		local source = replaceImports(file:read("*all"), path)
 		file:close()
-		script = script:gsub(v:gsub("([^%w])", "%%%1"), ("(function(...) %s end)(...)"):format(source))
+		source = Minifier.optimize(Minifier.MAXIMUM_OPTS, source):gsub("\t+", " "):gsub("\n+", " ")
+		script = script:gsub(v:gsub("([^%w])", "%%%1"), ("(function(...)%s end)(...)"):format(source))
 	end
 	return script
 end
 
-local mainScript, newMain = io.open("main.lua", "r"), io.open("newScript.lua", "w+")
-newMain:write(replaceImports(mainScript:read("*all")))
+local mainScript, newMain = io.open("test/test.lua", "r"), io.open("output.lua", "w+")
+newMain:write(replaceImports(mainScript:read("*all"), "test/"))
 mainScript:close()
 newMain:close()
